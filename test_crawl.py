@@ -1,5 +1,6 @@
+from crawl import get_urls_from_html
 import unittest
-from crawl import normalize_url, get_heading_from_html, get_first_paragraph_from_html
+from crawl import normalize_url, get_heading_from_html, get_first_paragraph_from_html, get_urls_from_html
 
 
 class TestCrawl(unittest.TestCase):
@@ -83,6 +84,49 @@ class TestCrawl(unittest.TestCase):
         input_body = "<html><body><h1>Test Title</h1></body></html>"
         actual = get_first_paragraph_from_html(input_body)
         expected = ""
+        self.assertEqual(actual, expected)
+
+    # Test get_urls_from_html
+    def test_get_urls_from_html_absolute(self):
+        input_url = "https://crawler-test.com"
+        input_body = '<html><body><a href="https://crawler-test.com"><span>Boot.dev</span></a></body></html>'
+        actual = get_urls_from_html(input_body, input_url)[0]
+        expected = ["https://crawler-test.com"]
+        self.assertEqual(actual, expected)
+
+    def test_get_urls_from_html_relative(self):
+        input_url = "https://crawler-test.com"
+        input_body = '<html><body><a href="/about"><span>About</span></a></body></html>'
+        actual = get_urls_from_html(input_body, input_url)[0]
+        expected = ["https://crawler-test.com/about"]
+        self.assertEqual(actual, expected)
+
+    def test_get_urls_from_html_multiple_urls(self):
+        input_url = "https://crawler-test.com"
+        input_body = '<html><body><a href="https://crawler-test.com"><span>Boot.dev</span></a><a href="/about"><span>About</span></a></body></html>'
+        actual = get_urls_from_html(input_body, input_url)[0]
+        expected = ["https://crawler-test.com", "https://crawler-test.com/about"]
+        self.assertEqual(actual, expected)
+
+    def test_get_urls_from_html_multiple_urls_not_in_base_domain(self):
+        input_url = "https://crawler-test.com"
+        input_body = '<html><body><a href="https://crawler-test.com"><span>Boot.dev</span></a><a href="/about"><span>About</span></a><a href="https://google.com"><span>Google</span></a></body></html>'
+        actual = get_urls_from_html(input_body, input_url)[0]
+        expected = ["https://crawler-test.com", "https://crawler-test.com/about", "https://google.com"]
+        self.assertEqual(actual, expected)
+
+    def test_get_urls_from_html_no_urls(self):
+        input_url = "https://crawler-test.com"
+        input_body = '<html><body><h1>Test Title</h1></body></html>'
+        actual = get_urls_from_html(input_body, input_url)[0]
+        expected = []
+        self.assertEqual(actual, expected)
+
+    def test_get_urls_from_html_no_a_tags(self):
+        input_url = "https://crawler-test.com"
+        input_body = '<html><body><h1>Test Title</h1><p>Test Paragraph</p></body></html>'
+        actual = get_urls_from_html(input_body, input_url)[0]
+        expected = []
         self.assertEqual(actual, expected)
 
 

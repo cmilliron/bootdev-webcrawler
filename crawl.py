@@ -1,4 +1,4 @@
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup, Tag
 
 def normalize_url(url: str) -> str:
@@ -47,8 +47,24 @@ def get_first_paragraph_from_html(html: str) -> str:
     return ""
 
 
-def get_urls_from_html(html, base_url):
-    pass
+def get_urls_from_html(html: str, base_url: str) -> tuple[list[str], Exception | None]:
+    """
+    Takes the html from a page as a string and the base_url for relative links.
+    Returns an un-normalized list of all the URLs found within the HTML and an error if one occors.
+    It must make sure that relative paths are converted to absolute paths.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    a_tags = soup.find_all("a")
+    urls = []
+    for a in a_tags:
+        href = a.get("href")
+        if href:
+            if href.startswith("https"):
+                urls.append(href)
+            else:
+                urls.append(urljoin(base_url, href))
+
+    return urls, None
 
 
 def get_images_from_html(html, base_url):
