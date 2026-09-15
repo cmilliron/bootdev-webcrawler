@@ -1,3 +1,4 @@
+from crawl import get_html
 import sys
 from crawl import (
     normalize_url,
@@ -18,6 +19,10 @@ def main():
         sys.exit(1)
     base_url = sys.argv[1]
     print(f"starting crawl of: {base_url}")
+    html = get_html(base_url)
+    print(html)
+    print("crawl complete")
+
     sys.exit(0)
 
 

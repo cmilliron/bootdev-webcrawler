@@ -1,3 +1,4 @@
+import requests
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup, Tag
 
@@ -130,3 +131,15 @@ def extract_page_data(html: str, page_url: str) -> PageData:
         'outgoing_links': outgoing_links,
         'image_urls': image_urls,
     }
+
+def get_html(url: str) -> str:
+    agent = "BootCrawler/1.0"
+    headers = {"User-Agent": agent}
+    res = requests.get(url, headers=headers)
+    if res.status_code >= 400:
+        raise Exception(f"Error: {res.status_code} {res.reason}")
+    content_type = res.headers.get("Content-Type", "")
+    if "text/html" not in content_type:
+        raise Exception(f"Error: Invalid content type: {content_type}")
+    return res.text
+        
