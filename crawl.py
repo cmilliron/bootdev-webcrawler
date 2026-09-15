@@ -1,11 +1,21 @@
 from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup, Tag
 
+from typing import TypedDict
+
+
+class PageData(TypedDict):
+    url: str
+    heading: str
+    first_paragraph: str
+    outgoing_links: list[str]
+    image_urls: list[str]
+
+
 def normalize_url(url: str) -> str:
     parsed_url = urlparse(url)
     netloc = parsed_url.netloc
     path = parsed_url.path.rstrip("/")
-
     return f"{netloc}{path}"
         
 
@@ -92,3 +102,31 @@ def get_images_from_html(html: str, base_url: str) -> list[str]:
 
     return image_urls
     
+
+def extract_page_data(html: str, page_url: str) -> PageData:
+    """Extract key elements and absolute URLs from an HTML document.
+
+    Args:
+        html: Raw HTML string of the webpage.
+        page_url: Absolute URL of the page, used to resolve relative links.
+
+    Returns:
+        A dictionary containing:
+            - 'url' (str): The provided base page URL.
+            - 'heading' (str): Primary page heading (e.g., h1 content).
+            - 'first_paragraph' (str): Text of the initial body paragraph.
+            - 'outgoing_links' (list[str]): Fully resolved outbound hyperlinks.
+            - 'image_urls' (list[str]): Fully resolved image source URLs.
+    """
+    heading = get_heading_from_html(html)
+    first_paragraph = get_first_paragraph_from_html(html)
+    outgoing_links = get_urls_from_html(html, page_url)
+    image_urls = get_images_from_html(html, page_url)
+
+    return {
+        'url': page_url,
+        'heading': heading,
+        'first_paragraph': first_paragraph,
+        'outgoing_links': outgoing_links,
+        'image_urls': image_urls,
+    }
