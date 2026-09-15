@@ -47,25 +47,48 @@ def get_first_paragraph_from_html(html: str) -> str:
     return ""
 
 
-def get_urls_from_html(html: str, base_url: str) -> tuple[list[str], Exception | None]:
+def get_urls_from_html(html: str, base_url: str) -> list[str]:
     """
     Takes the html from a page as a string and the base_url for relative links.
-    Returns an un-normalized list of all the URLs found within the HTML and an error if one occors.
+    Returns an un-normalized list of all the URLs found within the HTML.
     It must make sure that relative paths are converted to absolute paths.
     """
     soup = BeautifulSoup(html, "html.parser")
     a_tags = soup.find_all("a")
     urls = []
     for a in a_tags:
+        if not isinstance(a, Tag):
+            continue
         href = a.get("href")
-        if href:
-            if href.startswith("https"):
-                urls.append(href)
-            else:
-                urls.append(urljoin(base_url, href))
+        if href and isinstance(href, str):
+            try:
+                absolute_url = urljoin(base_url, href)
+                urls.append(absolute_url)
+            except Exception as e:
+                print(f"{str(e)}: {href}")
+    return urls
 
-    return urls, None
 
+def get_images_from_html(html: str, base_url: str) -> list[str]:
+    """
+    Takes the html from a page as a string and the base_url for relative links.
+    Returns an un-normalized list of all the image URLs found within the HTML and an error if one occors.
+    It must make sure that relative paths are converted to absolute paths.
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    image_urls = []
+    images = soup.find_all("img")
 
-def get_images_from_html(html, base_url):
-    pass
+    for img in images:
+        if not isinstance(img, Tag):
+            continue
+        src = img.get("src")
+        if isinstance(src, str) and src:
+            try:
+                absolute_url = urljoin(base_url, src)
+                image_urls.append(absolute_url)
+            except Exception as e:
+                print(f"{str(e)}: {src}")
+
+    return image_urls
+    
