@@ -150,16 +150,3 @@ def get_html(url: str) -> str:
 
     return res.text
 
-
-def crawl_page(base_url, current_url=None, page_data=None):
-    """ Crawl the page at current_url, updating the page_data accumulator as it goes.
-    Pseudocode:
-    1. Make sure the current_url is on the same domain as the base_url. If it's not, just return. We don't want to crawl the entire internet, just the domain in question.
-    2. Get a normalized version of the current_url.
-    3. Check if we've already crawled this page by checking if the normalized URL is already a key in the page_data dictionary. If we have, just return - we don't want to crawl the same page twice.
-    4. Get the HTML from the current URL, and add a print statement so you can watch your crawler in real-time.
-    5. Assuming all went well with the request, pass the HTML and current_url to extract_page_data() and add the result to the page_data dictionary using the normalized URL as the key.
-    6. Use the extracted page data's outgoing_links as the URLs to crawl next
-    7. Recursively crawl each URL on the page
-    """
-    pass
