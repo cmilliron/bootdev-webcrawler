@@ -1,4 +1,3 @@
-from crawl import get_html
 import sys
 from crawl import (
     normalize_url,
@@ -6,7 +5,10 @@ from crawl import (
     get_first_paragraph_from_html,
     get_urls_from_html,
     get_images_from_html,
-    extract_page_data
+    extract_page_data,
+    get_html,
+    crawl_page,
+    PageData
 )
 
 
@@ -18,10 +20,14 @@ def main():
         print("too many arguments provided\n\nUsage: python main.py <url>")
         sys.exit(1)
     base_url = sys.argv[1]
-    print(f"starting crawl of: {base_url}")
-    html = get_html(base_url)
-    print(html)
-    print("crawl complete")
+
+    print(f"starting crawl of: {base_url}...")
+    
+    page_data = crawl_page(base_url)
+
+    print(f"Found {len(page_data)} pages:")
+    for i, page in enumerate(page_data.values(), 1):
+        print(f"{i}. {page['url']}: {len(page['outgoing_links'])} outgoing links")
 
     sys.exit(0)
 

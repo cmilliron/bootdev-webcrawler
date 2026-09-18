@@ -1,5 +1,6 @@
+import time
 import requests
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse, urljoin, urlsplit
 from bs4 import BeautifulSoup, Tag
 
 from typing import TypedDict
@@ -150,3 +151,59 @@ def get_html(url: str) -> str:
 
     return res.text
 
+
+def crawl_page(
+    base_url: str,
+    current_url: str | None = None,
+    page_data: dict[str, PageData] | None = None
+) -> dict[str, PageData]:
+    """ Crawl the page at current_url, updating the page_data accumulator as it goes.
+
+    Args:
+        base_url (str): The base URL of the domain to crawl.
+        current_url (str, optional): The current URL to crawl. Defaults to None.
+        page_data (dict, optional): The accumulator for storing page data. Defaults to None.
+
+    Returns:
+        None
+
+    Pseudocode:
+    X. Make sure the current_url is on the same domain as the base_url. If it's not, just return. We don't want to crawl the entire internet, just the domain in question.
+    X. Get a normalized version of the current_url.
+    X. Check if we've already crawled this page by checking if the normalized URL is already a key in the page_data dictionary. If we have, just return - we don't want to crawl the same page twice.
+    X. Get the HTML from the current URL, and add a print statement so you can watch your crawler in real-time.
+    5. Assuming all went well with the request, pass the HTML and current_url to extract_page_data() and add the result to the page_data dictionary using the normalized URL as the key.
+    6. Use the extracted page data's outgoing_links as the URLs to crawl next
+    7. Recursively crawl each URL on the page
+    """
+    if current_url is None:
+        current_url = base_url
+    if page_data is None:
+        page_data: dict[str, PageData] = {}
+
+    if not does_start_with_base(base_url, current_url):
+        return page_data
+
+    normalized_url = normalize_url(current_url)
+
+    if normalized_url in page_data:
+        return page_data
+    
+    html = get_html(current_url)
+    if html is None:
+        return page_data
+    
+    print(f"crawling: {normalized_url}:")
+    current_page_data = extract_page_data(html, current_url)
+    page_data[normalized_url] = current_page_data
+    for url in current_page_data['outgoing_links']:
+        time.sleep(0.10)
+        crawl_page(base_url, url, page_data)  
+    return page_data  
+
+def does_start_with_base(base_url: str, current_url: str) -> bool:
+    base_url_obj = urlsplit(base_url)
+    current_url_obj = urlsplit(current_url)
+    if current_url_obj.netloc != base_url_obj.netloc:
+        return False
+    return True
