@@ -1,18 +1,11 @@
 import sys
+import asyncio
 from crawl import (
-    normalize_url,
-    get_heading_from_html,
-    get_first_paragraph_from_html,
-    get_urls_from_html,
-    get_images_from_html,
-    extract_page_data,
-    get_html,
-    crawl_page,
-    PageData
+    crawl_site_async
 )
 
 
-def main():
+async def main():
     if len(sys.argv) < 2:
         print("no website provided\n\nUsage: python main.py <url>")
         sys.exit(1)
@@ -23,7 +16,7 @@ def main():
 
     print(f"starting crawl of: {base_url}...")
     
-    page_data = crawl_page(base_url)
+    page_data = await crawl_site_async(base_url)
 
     print(f"Found {len(page_data)} pages:")
     for i, page in enumerate(page_data.values(), 1):
@@ -33,4 +26,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
