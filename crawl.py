@@ -6,6 +6,7 @@ from typing import TypedDict
 import asyncio
 import aiohttp
 from types import TracebackType
+import json
 
 class PageData(TypedDict):
     url: str
@@ -227,13 +228,16 @@ def does_start_with_base(base_url: str, current_url: str) -> bool:
 
 
 class AsyncWebCrawler:
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, max_concurrency: int = 3, max_pages: int = 10) -> None:
         self.base_url = base_url
         self.base_domain = urlsplit(base_url).netloc
         self.page_data: dict[str, PageData] = {}
         self.visited: set[str] = set()
         self.lock = asyncio.Lock()
-        self.max_concurrency = 3
+        self.max_concurrency = max_concurrency
+        self.max_pages = max_pages
+        self.all_tasks: set[asyncio.Task[None]] = set()
+        self.should_stop = False
         self.semaphore = asyncio.Semaphore(self.max_concurrency)
         self.session: aiohttp.ClientSession | None = None
     
@@ -251,8 +255,17 @@ class AsyncWebCrawler:
 
     async def add_page_visit(self, normalized_url: str) -> bool:
         async with self.lock:
+            if self.should_stop:
+                return False
+
             if normalized_url in self.visited:
                 return False
+
+            if len(self.visited) >= self.max_pages:
+                self.should_stop = True
+                print("Reached maximum number of pages to crawl.")
+                return False
+
             self.visited.add(normalized_url)
             return True
 
@@ -282,6 +295,9 @@ class AsyncWebCrawler:
         self,
         current_url: str | None = None,
     ) -> None:
+        if self.should_stop:
+            return
+
         if not does_start_with_base(self.base_url, current_url):
             return
         
@@ -307,19 +323,33 @@ class AsyncWebCrawler:
 
             next_urls = current_page_data["outgoing_links"]
 
+        if self.should_stop:
+            return
+
         tasks: list[asyncio.Task[None]] = []
         for next_url in next_urls:
             task = asyncio.create_task(self.crawl_page(next_url))
             tasks.append(task)
-
+            self.all_tasks.add(task)
+        
         if tasks:
-            await asyncio.gather(*tasks)
+            try: 
+                await asyncio.gather(*tasks, return_exceptions=True)
+            finally:
+                for task in tasks:
+                    self.all_tasks.discard(task)
 
     async def crawl(self) -> dict[str, PageData]:
         await self.crawl_page(self.base_url)
         return self.page_data
 
 
-async def crawl_site_async(base_url: str) -> dict[str, PageData]:
-    async with AsyncWebCrawler(base_url) as crawler:
+async def crawl_site_async(base_url: str, max_concurrency: int, max_pages: int) -> dict[str, PageData]:
+    async with AsyncWebCrawler(base_url, max_concurrency, max_pages) as crawler:
         return await crawler.crawl()
+
+
+def write_json_report(page_data: dict[str, PageData], filename: str = "report.json") -> None:
+    pages = sorted(page_data.values(), key=lambda p: p['url'])
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(pages, f, indent=2)
